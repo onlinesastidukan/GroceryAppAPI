@@ -105,7 +105,7 @@ Visit `https://localhost:7001/swagger` for interactive API documentation.
 ## Default Credentials
 ```
 UserId: admin
-Password: Admin@123
+Password: Admin@1234567#
 Role: Admin
 ```
 
