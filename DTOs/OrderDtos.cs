@@ -4,6 +4,8 @@ namespace GroceryOrderingApp.Backend.DTOs
 {
     public class CreateOrderRequest
     {
+        public string? CustomerName { get; set; }
+        public string? CustomerMobileNumber { get; set; }
         public string? DeliveryAddress { get; set; }
         public List<OrderItemRequest> Items { get; set; } = new();
     }
@@ -47,6 +49,12 @@ namespace GroceryOrderingApp.Backend.DTOs
 
         [JsonPropertyName("deliveryAddress")]
         public string? DeliveryAddress { get; set; }
+
+        [JsonPropertyName("customerName")]
+        public string? CustomerName { get; set; }
+
+        [JsonPropertyName("customerMobileNumber")]
+        public string? CustomerMobileNumber { get; set; }
 
         [JsonPropertyName("items")]
         public List<OrderItemDto> Items { get; set; } = new();

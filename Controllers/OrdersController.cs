@@ -1,62 +1,84 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+using GroceryOrderingApp.Backend.DTOs;
 using GroceryOrderingApp.Backend.Models;
 using GroceryOrderingApp.Backend.Repositories;
 using GroceryOrderingApp.Backend.Services;
-using GroceryOrderingApp.Backend.DTOs;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GroceryOrderingApp.Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Customer")]
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
-        private readonly IOrderRepository _orderRepository;
-        private readonly IProductRepository _productRepository;
+        private readonly IDealerNotificationRepository _notificationRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly PasswordHasher<User> _passwordHasher;
 
         public OrdersController(
             IOrderService orderService,
-            IOrderRepository orderRepository,
-            IProductRepository productRepository)
+            IDealerNotificationRepository notificationRepository,
+            IUserRepository userRepository)
         {
             _orderService = orderService;
-            _orderRepository = orderRepository;
-            _productRepository = productRepository;
+            _notificationRepository = notificationRepository;
+            _userRepository = userRepository;
+            _passwordHasher = new PasswordHasher<User>();
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
         {
             if (request.Items == null || request.Items.Count == 0)
                 return BadRequest("Order must contain at least one item");
 
             var userIdClaim = User.FindFirst("userId")?.Value;
-            if (!int.TryParse(userIdClaim, out var userId))
-                return Unauthorized();
+            int userId;
+            if (!int.TryParse(userIdClaim, out userId))
+            {
+                if (string.IsNullOrWhiteSpace(request.CustomerMobileNumber) || string.IsNullOrWhiteSpace(request.DeliveryAddress))
+                {
+                    return BadRequest("CustomerMobileNumber and DeliveryAddress are required for guest orders");
+                }
+
+                var customerUser = await GetOrCreateGuestCustomerAsync(request);
+                userId = customerUser.Id;
+            }
 
             try
             {
                 var order = new Order
                 {
                     UserId = userId,
-                    DeliveryAddress = request.DeliveryAddress?.Trim()
+                    DeliveryAddress = request.DeliveryAddress?.Trim(),
+                    CustomerName = request.CustomerName?.Trim(),
+                    CustomerMobileNumber = request.CustomerMobileNumber?.Trim()
                 };
                 var items = request.Items.Select(i => (i.ProductId, i.Quantity)).ToList();
 
                 var createdOrder = await _orderService.CreateOrderAsync(order, items);
+                var fullOrder = await _orderService.GetOrderByIdAsync(createdOrder.Id);
+                if (fullOrder == null)
+                {
+                    return BadRequest("Order creation failed");
+                }
+
+                await CreateDealerNotificationsAsync(fullOrder);
 
                 var orderDto = new OrderDto
                 {
-                    Id = createdOrder.Id,
-                    UserId = createdOrder.UserId,
-                    OrderDate = createdOrder.OrderDate,
-                    Status = createdOrder.Status,
-                    TotalAmount = createdOrder.TotalAmount,
-                    DeliveryAddress = createdOrder.DeliveryAddress,
-                    Items = createdOrder.OrderItems.Select(oi => new OrderItemDto
+                    Id = fullOrder.Id,
+                    UserId = fullOrder.UserId,
+                    OrderDate = fullOrder.OrderDate,
+                    Status = fullOrder.Status,
+                    TotalAmount = fullOrder.TotalAmount,
+                    DeliveryAddress = fullOrder.DeliveryAddress,
+                    CustomerName = fullOrder.CustomerName,
+                    CustomerMobileNumber = fullOrder.CustomerMobileNumber,
+                    Items = fullOrder.OrderItems.Select(oi => new OrderItemDto
                     {
                         Id = oi.Id,
                         ProductId = oi.ProductId,
@@ -66,7 +88,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                     }).ToList()
                 };
 
-                return Created($"/api/orders/{createdOrder.Id}", orderDto);
+                return Created($"/api/orders/{fullOrder.Id}", orderDto);
             }
             catch (InvalidOperationException ex)
             {
@@ -75,6 +97,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpGet("my")]
+        [Authorize]
         public async Task<IActionResult> GetMyOrders()
         {
             var userIdClaim = User.FindFirst("userId")?.Value;
@@ -89,6 +112,9 @@ namespace GroceryOrderingApp.Backend.Controllers
                 OrderDate = o.OrderDate,
                 Status = o.Status,
                 TotalAmount = o.TotalAmount,
+                DeliveryAddress = o.DeliveryAddress,
+                CustomerName = o.CustomerName,
+                CustomerMobileNumber = o.CustomerMobileNumber,
                 Items = o.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
@@ -103,6 +129,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetOrder(int id)
         {
             var userIdClaim = User.FindFirst("userId")?.Value;
@@ -123,6 +150,8 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Status = order.Status,
                 TotalAmount = order.TotalAmount,
                 DeliveryAddress = order.DeliveryAddress,
+                CustomerName = order.CustomerName,
+                CustomerMobileNumber = order.CustomerMobileNumber,
                 Items = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
@@ -134,6 +163,58 @@ namespace GroceryOrderingApp.Backend.Controllers
             };
 
             return Ok(orderDto);
+        }
+
+        private async Task<User> GetOrCreateGuestCustomerAsync(CreateOrderRequest request)
+        {
+            var mobile = request.CustomerMobileNumber!.Trim();
+            var existingUser = await _userRepository.GetUserByMobileNumberAsync(mobile);
+            if (existingUser != null)
+            {
+                existingUser.Address = request.DeliveryAddress!.Trim();
+                if (!string.IsNullOrWhiteSpace(request.CustomerName))
+                {
+                    existingUser.FullName = request.CustomerName.Trim();
+                }
+
+                await _userRepository.UpdateUserAsync(existingUser);
+                return existingUser;
+            }
+
+            var guestCustomer = new User
+            {
+                UserId = mobile,
+                FullName = string.IsNullOrWhiteSpace(request.CustomerName) ? "Guest Customer" : request.CustomerName.Trim(),
+                MobileNumber = mobile,
+                Address = request.DeliveryAddress!.Trim(),
+                RoleId = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            guestCustomer.PasswordHash = _passwordHasher.HashPassword(guestCustomer, $"{mobile}!Guest");
+            return await _userRepository.CreateUserAsync(guestCustomer);
+        }
+
+        private async Task CreateDealerNotificationsAsync(Order fullOrder)
+        {
+            var dealerIds = fullOrder.OrderItems
+                .Select(oi => oi.Product?.Category?.DealerId)
+                .Where(d => d.HasValue)
+                .Select(d => d!.Value)
+                .Distinct()
+                .ToList();
+
+            foreach (var dealerId in dealerIds)
+            {
+                await _notificationRepository.CreateAsync(new DealerNotification
+                {
+                    DealerId = dealerId,
+                    OrderId = fullOrder.Id,
+                    Message = $"New order #{fullOrder.Id} placed.",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
         }
     }
 }

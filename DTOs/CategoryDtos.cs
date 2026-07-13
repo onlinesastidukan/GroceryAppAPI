@@ -5,6 +5,7 @@ namespace GroceryOrderingApp.Backend.DTOs
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? PhotoUrl { get; set; }
+        public int? DealerId { get; set; }
         // Accept imageUrl as alias
         public string? ImageUrl { get; set; }
     }
@@ -14,6 +15,7 @@ namespace GroceryOrderingApp.Backend.DTOs
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? PhotoUrl { get; set; }
+        public int? DealerId { get; set; }
         // Accept imageUrl as alias
         public string? ImageUrl { get; set; }
         public bool IsActive { get; set; } = true;
@@ -25,6 +27,7 @@ namespace GroceryOrderingApp.Backend.DTOs
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? PhotoUrl { get; set; }
+        public int? DealerId { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

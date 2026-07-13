@@ -23,6 +23,11 @@ namespace GroceryOrderingApp.Backend.Repositories
             return await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.UserId == userId);
         }
 
+        public async Task<User?> GetUserByMobileNumberAsync(string mobileNumber)
+        {
+            return await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.MobileNumber == mobileNumber);
+        }
+
         public async Task<List<User>> GetAllUsersAsync()
         {
             return await _context.Users.Include(u => u.Role).ToListAsync();

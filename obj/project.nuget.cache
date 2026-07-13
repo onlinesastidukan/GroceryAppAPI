@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "vw3T+/gEJDw=",
+  "dgSpecHash": "goezq22tJOY=",
   "success": true,
-  "projectFilePath": "E:\\Rohit_Mundhe\\WOrk\\Backend-API\\GroceryAppAPI\\GroceryOrderingApp.Backend.csproj",
+  "projectFilePath": "E:\\Rohit_Mundhe\\WOrk\\SastiDukan\\GroceryAppAPI\\GroceryOrderingApp.Backend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ROHITMUNDHE2\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\ROHITMUNDHE2\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\8.0.0\\microsoft.aspnetcore.authentication.jwtbearer.8.0.0.nupkg.sha512",

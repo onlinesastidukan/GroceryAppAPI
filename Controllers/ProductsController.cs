@@ -16,14 +16,15 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProductsByCategory([FromQuery] int? categoryId = null)
+        public async Task<IActionResult> GetProductsByCategory([FromQuery] int? categoryId = null, [FromQuery] int? shopId = null)
         {
             List<Models.Product> products;
+            var effectiveCategoryId = shopId.GetValueOrDefault() > 0 ? shopId : categoryId;
 
             // If categoryId is not provided (or invalid), return all active products.
-            if (categoryId.HasValue && categoryId.Value > 0)
+            if (effectiveCategoryId.HasValue && effectiveCategoryId.Value > 0)
             {
-                products = await _productRepository.GetActiveProductsByCategoryAsync(categoryId.Value);
+                products = await _productRepository.GetActiveProductsByCategoryAsync(effectiveCategoryId.Value);
             }
             else
             {
@@ -40,6 +41,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Price = p.Price,
                 StockQuantity = p.StockQuantity,
                 CategoryId = p.CategoryId,
+                ShopId = p.CategoryId,
                 PhotoUrl = p.PhotoUrl,
                 IsActive = p.IsActive
             }).ToList();

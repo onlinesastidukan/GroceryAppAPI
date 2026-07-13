@@ -19,6 +19,7 @@ namespace GroceryOrderingApp.Backend.Repositories
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
+                .ThenInclude(p => p!.Category)
                 .FirstOrDefaultAsync(o => o.Id == id);
         }
 
@@ -29,6 +30,7 @@ namespace GroceryOrderingApp.Backend.Repositories
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
+                .ThenInclude(p => p!.Category)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
@@ -39,6 +41,7 @@ namespace GroceryOrderingApp.Backend.Repositories
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
+                .ThenInclude(p => p!.Category)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }

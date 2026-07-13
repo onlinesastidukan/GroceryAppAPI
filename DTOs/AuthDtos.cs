@@ -2,7 +2,8 @@ namespace GroceryOrderingApp.Backend.DTOs
 {
     public class LoginRequestDto
     {
-        public string UserId { get; set; } = string.Empty;
+        public string? UserId { get; set; }
+        public string? MobileNumber { get; set; }
         public string Password { get; set; } = string.Empty;
     }
 
@@ -18,7 +19,6 @@ namespace GroceryOrderingApp.Backend.DTOs
 
     public class RegisterRequestDto
     {
-        public string UserId { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string MobileNumber { get; set; } = string.Empty;

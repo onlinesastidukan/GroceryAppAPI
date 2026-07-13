@@ -6,6 +6,7 @@ namespace GroceryOrderingApp.Backend.Repositories
     {
         Task<User?> GetUserByIdAsync(int id);
         Task<User?> GetUserByUserIdAsync(string userId);
+        Task<User?> GetUserByMobileNumberAsync(string mobileNumber);
         Task<List<User>> GetAllUsersAsync();
         Task<User> CreateUserAsync(User user);
         Task UpdateUserAsync(User user);

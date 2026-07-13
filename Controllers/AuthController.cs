@@ -18,12 +18,15 @@ namespace GroceryOrderingApp.Backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.UserId) || string.IsNullOrWhiteSpace(request.Password))
-                return BadRequest("UserId and Password are required");
+            if ((string.IsNullOrWhiteSpace(request.UserId) && string.IsNullOrWhiteSpace(request.MobileNumber)) ||
+                string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest("MobileNumber (or UserId) and Password are required");
+            }
 
             var result = await _authService.LoginAsync(request);
             if (result == null)
-                return Unauthorized("Invalid credentials");
+                return Unauthorized("Invalid dealer/admin credentials");
 
             return Ok(result);
         }
@@ -31,13 +34,12 @@ namespace GroceryOrderingApp.Backend.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.UserId) ||
-                string.IsNullOrWhiteSpace(request.Password) ||
+            if (string.IsNullOrWhiteSpace(request.Password) ||
                 string.IsNullOrWhiteSpace(request.FullName) ||
                 string.IsNullOrWhiteSpace(request.MobileNumber) ||
                 string.IsNullOrWhiteSpace(request.Address))
             {
-                return BadRequest("UserId, Password, FullName, MobileNumber, and Address are required");
+                return BadRequest("Password, FullName, MobileNumber, and Address are required");
             }
 
             var result = await _authService.RegisterAsync(request);

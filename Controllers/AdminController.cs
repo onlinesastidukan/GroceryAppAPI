@@ -39,29 +39,41 @@ namespace GroceryOrderingApp.Backend.Controllers
         [HttpPost("users")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.UserId) ||
-                string.IsNullOrWhiteSpace(request.Password) ||
+            if (string.IsNullOrWhiteSpace(request.Password) ||
                 string.IsNullOrWhiteSpace(request.FullName) ||
                 string.IsNullOrWhiteSpace(request.MobileNumber) ||
                 string.IsNullOrWhiteSpace(request.Address))
             {
-                return BadRequest("UserId, Password, FullName, MobileNumber, and Address are required");
+                return BadRequest("Password, FullName, MobileNumber, and Address are required");
             }
 
-            var existingUser = await _userRepository.GetUserByUserIdAsync(request.UserId);
+            var userId = !string.IsNullOrWhiteSpace(request.UserId)
+                ? request.UserId.Trim()
+                : request.MobileNumber.Trim();
+            var existingUser = await _userRepository.GetUserByUserIdAsync(userId);
+            if (existingUser == null)
+            {
+                existingUser = await _userRepository.GetUserByMobileNumberAsync(request.MobileNumber.Trim());
+            }
             if (existingUser != null)
-                return BadRequest("UserId already exists");
+                return BadRequest("UserId or MobileNumber already exists");
 
-            var role = request.Role?.ToLower() == "admin" ? "Admin" : "Customer";
-            var roles = await _userRepository.GetAllUsersAsync();
-            
-            var roleId = 2; // Default to Customer
-            if (role == "Admin")
-                roleId = 1;
+            var role = request.Role?.Trim().ToLowerInvariant() switch
+            {
+                "admin" => "Admin",
+                "dealer" => "Dealer",
+                _ => "Customer"
+            };
+            var roleId = role switch
+            {
+                "Admin" => 1,
+                "Dealer" => 3,
+                _ => 2
+            };
 
             var user = new User
             {
-                UserId = request.UserId,
+                UserId = userId,
                 FullName = request.FullName,
                 MobileNumber = request.MobileNumber,
                 Address = request.Address,
@@ -111,6 +123,7 @@ namespace GroceryOrderingApp.Backend.Controllers
 
         // Categories Management
         [HttpGet("categories")]
+        [HttpGet("shops")]
         public async Task<IActionResult> GetAllCategories()
         {
             var categories = await _categoryRepository.GetAllCategoriesAsync();
@@ -120,6 +133,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Name = c.Name,
                 Description = c.Description,
                 PhotoUrl = c.PhotoUrl,
+                DealerId = c.DealerId,
                 IsActive = c.IsActive,
                 CreatedAt = c.CreatedAt,
                 UpdatedAt = c.UpdatedAt
@@ -128,6 +142,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpPost("categories")]
+        [HttpPost("shops")]
         public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
@@ -143,6 +158,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Name = request.Name,
                 Description = request.Description,
                 PhotoUrl = photoUrl,
+                DealerId = request.DealerId,
                 IsActive = true
             };
             var createdCategory = await _categoryRepository.CreateCategoryAsync(category);
@@ -153,6 +169,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Name = createdCategory.Name,
                 Description = createdCategory.Description,
                 PhotoUrl = createdCategory.PhotoUrl,
+                DealerId = createdCategory.DealerId,
                 IsActive = createdCategory.IsActive
             };
 
@@ -160,6 +177,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpDelete("categories/{id}")]
+        [HttpDelete("shops/{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             var category = await _categoryRepository.GetCategoryByIdAsync(id);
@@ -171,6 +189,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpPut("categories/{id}")]
+        [HttpPut("shops/{id}")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryRequest request)
         {
             var category = await _categoryRepository.GetCategoryByIdAsync(id);
@@ -186,6 +205,7 @@ namespace GroceryOrderingApp.Backend.Controllers
             category.Description = request.Description;
             // Only overwrite PhotoUrl if caller supplied one; preserve existing otherwise
             if (photoUrl != null) category.PhotoUrl = photoUrl;
+            category.DealerId = request.DealerId;
             category.IsActive = request.IsActive;
             category.UpdatedAt = DateTime.UtcNow;
 
@@ -197,6 +217,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Name = category.Name,
                 Description = category.Description,
                 PhotoUrl = category.PhotoUrl,
+                DealerId = category.DealerId,
                 IsActive = category.IsActive,
                 UpdatedAt = category.UpdatedAt
             };
@@ -205,6 +226,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpPatch("categories/{id}")]
+        [HttpPatch("shops/{id}")]
         public async Task<IActionResult> PatchCategory(int id, [FromBody] UpdateCategoryRequest request)
             => await UpdateCategory(id, request);
 
@@ -215,9 +237,10 @@ namespace GroceryOrderingApp.Backend.Controllers
             if (string.IsNullOrWhiteSpace(request.Name) || request.Price < 0 || request.StockQuantity < 0)
                 return BadRequest("Invalid product data");
 
-            var category = await _categoryRepository.GetCategoryByIdAsync(request.CategoryId);
+            var categoryId = request.ShopId > 0 ? request.ShopId : request.CategoryId;
+            var category = await _categoryRepository.GetCategoryByIdAsync(categoryId);
             if (category == null)
-                return BadRequest("Category not found");
+                return BadRequest("Shop not found");
 
             var product = new Product
             {
@@ -225,7 +248,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Description = request.Description,
                 Price = request.Price,
                 StockQuantity = request.StockQuantity,
-                CategoryId = request.CategoryId,
+                CategoryId = categoryId,
                 PhotoUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim(),
                 IsActive = true
             };
@@ -240,6 +263,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Price = createdProduct.Price,
                 StockQuantity = createdProduct.StockQuantity,
                 CategoryId = createdProduct.CategoryId,
+                ShopId = createdProduct.CategoryId,
                 PhotoUrl = createdProduct.PhotoUrl,
                 IsActive = createdProduct.IsActive
             };
@@ -261,7 +285,7 @@ namespace GroceryOrderingApp.Backend.Controllers
             product.Description = request.Description;
             product.Price = request.Price;
             product.StockQuantity = request.StockQuantity;
-            product.CategoryId = request.CategoryId;
+            product.CategoryId = request.ShopId > 0 ? request.ShopId : request.CategoryId;
             product.PhotoUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim();
             product.IsActive = request.IsActive;
 
@@ -275,6 +299,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Price = product.Price,
                 StockQuantity = product.StockQuantity,
                 CategoryId = product.CategoryId,
+                ShopId = product.CategoryId,
                 PhotoUrl = product.PhotoUrl,
                 IsActive = product.IsActive
             };
@@ -314,6 +339,8 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Status = o.Status,
                 TotalAmount = o.TotalAmount,
                 DeliveryAddress = o.DeliveryAddress,
+                CustomerName = o.CustomerName,
+                CustomerMobileNumber = o.CustomerMobileNumber,
                 Items = o.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
@@ -345,6 +372,8 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Status = order.Status,
                 TotalAmount = order.TotalAmount,
                 DeliveryAddress = order.DeliveryAddress,
+                CustomerName = order.CustomerName,
+                CustomerMobileNumber = order.CustomerMobileNumber,
                 Items = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,

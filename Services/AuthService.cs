@@ -24,9 +24,26 @@ namespace GroceryOrderingApp.Backend.Services
 
         public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
         {
-            var user = await _userRepository.GetUserByUserIdAsync(request.UserId);
+            var loginId = !string.IsNullOrWhiteSpace(request.MobileNumber)
+                ? request.MobileNumber.Trim()
+                : request.UserId?.Trim();
+            if (string.IsNullOrWhiteSpace(loginId))
+                return null;
+
+            var user = await _userRepository.GetUserByUserIdAsync(loginId);
+            if (user == null)
+            {
+                user = await _userRepository.GetUserByMobileNumberAsync(loginId);
+            }
+
             if (user == null || !user.IsActive)
                 return null;
+
+            if (!string.Equals(user.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(user.Role?.Name, "Dealer", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
 
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
             if (result == PasswordVerificationResult.Failed)
@@ -46,8 +63,7 @@ namespace GroceryOrderingApp.Backend.Services
 
         public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.UserId) ||
-                string.IsNullOrWhiteSpace(request.Password) ||
+            if (string.IsNullOrWhiteSpace(request.Password) ||
                 string.IsNullOrWhiteSpace(request.FullName) ||
                 string.IsNullOrWhiteSpace(request.MobileNumber) ||
                 string.IsNullOrWhiteSpace(request.Address))
@@ -55,27 +71,32 @@ namespace GroceryOrderingApp.Backend.Services
                 return new RegisterResponseDto
                 {
                     Success = false,
-                    Message = "UserId, Password, FullName, MobileNumber, and Address are required"
+                    Message = "Password, FullName, MobileNumber, and Address are required"
                 };
             }
 
-            var existingUser = await _userRepository.GetUserByUserIdAsync(request.UserId);
+            var userId = request.MobileNumber.Trim();
+            var existingUser = await _userRepository.GetUserByUserIdAsync(userId);
+            if (existingUser == null)
+            {
+                existingUser = await _userRepository.GetUserByMobileNumberAsync(userId);
+            }
             if (existingUser != null)
             {
                 return new RegisterResponseDto
                 {
                     Success = false,
-                    Message = "UserId already exists"
+                    Message = "Mobile number already exists"
                 };
             }
 
             var user = new User
             {
-                UserId = request.UserId.Trim(),
+                UserId = userId,
                 FullName = request.FullName.Trim(),
                 MobileNumber = request.MobileNumber.Trim(),
                 Address = request.Address.Trim(),
-                RoleId = 2,
+                RoleId = 3,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };

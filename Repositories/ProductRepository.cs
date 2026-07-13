@@ -34,6 +34,14 @@ namespace GroceryOrderingApp.Backend.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Product>> GetProductsByDealerAsync(int dealerId)
+        {
+            return await _context.Products
+                .Where(p => p.IsActive && p.Category != null && p.Category.DealerId == dealerId)
+                .Include(p => p.Category)
+                .ToListAsync();
+        }
+
         public async Task<List<Product>> GetAllProductsAsync()
         {
             return await _context.Products.Include(p => p.Category).ToListAsync();

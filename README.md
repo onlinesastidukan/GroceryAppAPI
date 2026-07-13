@@ -25,13 +25,14 @@ GroceryOrderingApp.Backend/
 ```
 
 ## Key Features
-✅ Admin & Customer roles
+✅ Admin, Dealer & Customer roles
 ✅ User management (Admin only)
-✅ Category & Product management
+✅ Shop (category alias) & Product management
 ✅ Shopping cart with stock validation
 ✅ Order placement & processing
 ✅ Admin delivery confirmation (with stock reduction)
 ✅ Order cancellation
+✅ Dealer product and notification APIs
 ✅ Secure JWT authentication
 ✅ Comprehensive API documentation via Swagger
 
@@ -78,13 +79,15 @@ Application will start at: `https://localhost:7001`
 ## API Endpoints
 
 ### Authentication
-- **POST** `/api/auth/login` - Login with UserId & Password
+- **POST** `/api/auth/login` - Dealer/Admin login (mobile number as user id for dealer)
+- **POST** `/api/auth/register` - Dealer registration
 
 ### Admin Endpoints (requires Admin role)
 - **POST** `/api/admin/users` - Create new user
 - **GET** `/api/admin/users` - Get all users
-- **POST** `/api/admin/categories` - Create category
-- **PUT** `/api/admin/categories/{id}` - Update category
+- **POST** `/api/admin/shops` - Create shop
+- **PUT** `/api/admin/shops/{id}` - Update shop
+- **DELETE** `/api/admin/shops/{id}` - Delete shop
 - **POST** `/api/admin/products` - Create product
 - **PUT** `/api/admin/products/{id}` - Update product
 - **GET** `/api/admin/orders` - Get all orders
@@ -92,10 +95,22 @@ Application will start at: `https://localhost:7001`
 - **PUT** `/api/admin/orders/{id}/deliver` - Mark as delivered (reduces stock)
 - **PUT** `/api/admin/orders/{id}/cancel` - Cancel order
 
-### Customer Endpoints (requires Customer role)
-- **GET** `/api/categories` - Get active categories
-- **GET** `/api/products?categoryId=1` - Get products by category
-- **POST** `/api/orders` - Place new order
+### Public/Customer Endpoints (no login required for order placement)
+- **GET** `/api/shops` - Get active shops
+- **GET** `/api/categories` - Backward-compatible categories endpoint
+- **GET** `/api/products?shopId=1` - Get products by shop
+- **POST** `/api/orders` - Place new order with mobile + address
+- **GET** `/api/orders/my` - Get my orders (authenticated users only)
+- **GET** `/api/orders/{id}` - Get order details (authenticated users only)
+
+### Dealer Endpoints (requires Dealer role)
+- **GET** `/api/dealer/shops` - Get dealer-assigned shops
+- **GET** `/api/dealer/products` - Get dealer products
+- **POST** `/api/dealer/products` - Add dealer product
+- **PUT** `/api/dealer/products/{id}` - Update dealer product
+- **DELETE** `/api/dealer/products/{id}` - Delete dealer product
+- **GET** `/api/dealer/notifications` - Get order notifications
+- **PUT** `/api/dealer/notifications/{id}/read` - Mark notification as read
 - **GET** `/api/orders/my` - Get my orders
 - **GET** `/api/orders/{id}` - Get order details
 
@@ -112,12 +127,13 @@ Role: Admin
 ## Database Schema
 
 ### Tables
-1. **Roles** - Admin, Customer
+1. **Roles** - Admin, Dealer, Customer
 2. **Users** - UserId, PasswordHash, RoleId, IsActive
-3. **Categories** - Name, IsActive
+3. **Categories (Shops)** - Name, DealerId, IsActive
 4. **Products** - Name, Description, Price, StockQuantity, CategoryId, IsActive
-5. **Orders** - UserId, OrderDate, Status, TotalAmount
+5. **Orders** - UserId, CustomerMobileNumber, DeliveryAddress, Status, TotalAmount
 6. **OrderItems** - OrderId, ProductId, Quantity, PriceAtTime
+7. **DealerNotifications** - DealerId, OrderId, Message, IsRead
 
 ## Security Features
 ✅ Password hashing using ASP.NET Identity PasswordHasher

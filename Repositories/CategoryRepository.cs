@@ -28,6 +28,13 @@ namespace GroceryOrderingApp.Backend.Repositories
             return await _context.Categories.Where(c => c.IsActive).ToListAsync();
         }
 
+        public async Task<List<Category>> GetShopsByDealerAsync(int dealerId)
+        {
+            return await _context.Categories
+                .Where(c => c.DealerId == dealerId && c.IsActive)
+                .ToListAsync();
+        }
+
         public async Task<Category> CreateCategoryAsync(Category category)
         {
             await _context.Categories.AddAsync(category);

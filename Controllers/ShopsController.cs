@@ -1,27 +1,25 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using GroceryOrderingApp.Backend.Repositories;
-using GroceryOrderingApp.Backend.Models;
 using GroceryOrderingApp.Backend.DTOs;
+using GroceryOrderingApp.Backend.Repositories;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GroceryOrderingApp.Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CategoriesController : ControllerBase
+    public class ShopsController : ControllerBase
     {
         private readonly ICategoryRepository _categoryRepository;
 
-        public CategoriesController(ICategoryRepository categoryRepository)
+        public ShopsController(ICategoryRepository categoryRepository)
         {
             _categoryRepository = categoryRepository;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetActiveCategories()
+        public async Task<IActionResult> GetActiveShops()
         {
-            var categories = await _categoryRepository.GetActiveCategoriesAsync();
-            var categoryDtos = categories.Select(c => new CategoryDto
+            var shops = await _categoryRepository.GetActiveCategoriesAsync();
+            var shopDtos = shops.Select(c => new CategoryDto
             {
                 Id = c.Id,
                 Name = c.Name,
@@ -33,7 +31,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 UpdatedAt = c.UpdatedAt
             }).ToList();
 
-            return Ok(categoryDtos);
+            return Ok(shopDtos);
         }
     }
 }

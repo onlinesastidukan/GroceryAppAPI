@@ -16,5 +16,7 @@ namespace GroceryOrderingApp.Backend.Models
 
         public Role? Role { get; set; }
         public ICollection<Order> Orders { get; set; } = new List<Order>();
+        public ICollection<Category> DealerShops { get; set; } = new List<Category>();
+        public ICollection<DealerNotification> DealerNotifications { get; set; } = new List<DealerNotification>();
     }
 }

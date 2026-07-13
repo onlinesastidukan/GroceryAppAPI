@@ -16,6 +16,7 @@ namespace GroceryOrderingApp.Backend.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<DealerNotification> DealerNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +50,10 @@ namespace GroceryOrderingApp.Backend.Data
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasColumnType("text");
                 entity.Property(e => e.PhotoUrl).HasColumnType("text");
+                entity.HasOne(e => e.Dealer)
+                    .WithMany(u => u.DealerShops)
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Product configuration
@@ -67,6 +72,8 @@ namespace GroceryOrderingApp.Backend.Data
                 entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
                 entity.Property(e => e.DeliveryAddress).HasMaxLength(500);
+                entity.Property(e => e.CustomerName).HasMaxLength(150);
+                entity.Property(e => e.CustomerMobileNumber).HasMaxLength(20);
                 entity.HasOne(e => e.User).WithMany(u => u.Orders).HasForeignKey(e => e.UserId);
             });
 
@@ -77,6 +84,20 @@ namespace GroceryOrderingApp.Backend.Data
                 entity.Property(e => e.PriceAtTime).HasPrecision(18, 2);
                 entity.HasOne(e => e.Order).WithMany(o => o.OrderItems).HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne(e => e.Product).WithMany(p => p.OrderItems).HasForeignKey(e => e.ProductId);
+            });
+
+            modelBuilder.Entity<DealerNotification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Message).IsRequired().HasMaxLength(500);
+                entity.HasOne(e => e.Dealer)
+                    .WithMany(u => u.DealerNotifications)
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Order)
+                    .WithMany(o => o.DealerNotifications)
+                    .HasForeignKey(e => e.OrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

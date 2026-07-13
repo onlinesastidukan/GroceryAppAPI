@@ -18,19 +18,24 @@ namespace GroceryOrderingApp.Backend
         public async Task SeedAsync()
         {
             // Seed Roles
-            if (!_context.Roles.Any())
+            var requiredRoles = new[]
             {
-                var roles = new[]
+                new Role { Id = 1, Name = "Admin" },
+                new Role { Id = 2, Name = "Customer" },
+                new Role { Id = 3, Name = "Dealer" }
+            };
+
+            foreach (var role in requiredRoles)
+            {
+                if (!_context.Roles.Any(r => r.Name == role.Name))
                 {
-                    new Role { Id = 1, Name = "Admin" },
-                    new Role { Id = 2, Name = "Customer" }
-                };
-                _context.Roles.AddRange(roles);
-                await _context.SaveChangesAsync();
+                    _context.Roles.Add(role);
+                }
             }
+            await _context.SaveChangesAsync();
 
             // Seed Admin User
-            if (!_context.Users.Any())
+            if (!_context.Users.Any(u => u.RoleId == 1))
             {
                 var adminUser = new User
                 {
@@ -47,16 +52,34 @@ namespace GroceryOrderingApp.Backend
                 await _context.SaveChangesAsync();
             }
 
+            if (!_context.Users.Any(u => u.RoleId == 3))
+            {
+                var dealerUser = new User
+                {
+                    UserId = "8888888888",
+                    FullName = "Default Dealer",
+                    MobileNumber = "8888888888",
+                    Address = "Dealer Hub",
+                    RoleId = 3,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                dealerUser.PasswordHash = _passwordHasher.HashPassword(dealerUser, "Dealer@123");
+                _context.Users.Add(dealerUser);
+                await _context.SaveChangesAsync();
+            }
+
             // Seed Categories with Hindi names
             if (!_context.Categories.Any())
             {
+                var defaultDealerId = _context.Users.FirstOrDefault(u => u.RoleId == 3)?.Id;
                 var categories = new[]
                 {
-                    new Category { Name = "Sabji ki dukan", IsActive = true },        // Vegetable shop
-                    new Category { Name = "Parchun ki dukan", IsActive = true },      // Grocery/Spice shop
-                    new Category { Name = "Cake ki dukan", IsActive = true },         // Bakery shop
-                    new Category { Name = "Tailor ki dukan", IsActive = true },       // Tailoring shop
-                    new Category { Name = "Fruits ki dukan", IsActive = true }        // Fruit shop
+                    new Category { Name = "Sabji ki dukan", DealerId = defaultDealerId, IsActive = true },        // Vegetable shop
+                    new Category { Name = "Parchun ki dukan", DealerId = defaultDealerId, IsActive = true },      // Grocery/Spice shop
+                    new Category { Name = "Cake ki dukan", DealerId = defaultDealerId, IsActive = true },         // Bakery shop
+                    new Category { Name = "Tailor ki dukan", DealerId = defaultDealerId, IsActive = true },       // Tailoring shop
+                    new Category { Name = "Fruits ki dukan", DealerId = defaultDealerId, IsActive = true }        // Fruit shop
                 };
                 _context.Categories.AddRange(categories);
                 await _context.SaveChangesAsync();
