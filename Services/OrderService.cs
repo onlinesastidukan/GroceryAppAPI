@@ -29,6 +29,11 @@ namespace GroceryOrderingApp.Backend.Services
             return await _orderRepository.GetAllOrdersAsync();
         }
 
+
+        public async Task<List<Order>> GetActiveOrdersByMobileAsync(string mobileNumber)
+        {
+            return await _orderRepository.GetActiveOrdersByMobileAsync(mobileNumber);
+        }
         public async Task<Order> CreateOrderAsync(Order order, List<(int productId, int quantity)> items)
         {
             decimal totalAmount = 0;

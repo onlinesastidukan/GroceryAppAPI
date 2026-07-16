@@ -128,6 +128,41 @@ namespace GroceryOrderingApp.Backend.Controllers
             return Ok(orderDtos);
         }
 
+
+        [HttpGet("mobile/{mobileNumber}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetActiveOrdersByMobile(string mobileNumber)
+        {
+            if (string.IsNullOrWhiteSpace(mobileNumber))
+            {
+                return BadRequest("Mobile number is required");
+            }
+
+            var orders = await _orderService.GetActiveOrdersByMobileAsync(mobileNumber);
+            var orderDtos = orders.Select(o => new OrderDto
+            {
+                Id = o.Id,
+                UserId = o.UserId,
+                UserFullName = o.User?.FullName ?? string.Empty,
+                UserMobileNumber = o.User?.MobileNumber ?? string.Empty,
+                OrderDate = o.OrderDate,
+                Status = o.Status,
+                TotalAmount = o.TotalAmount,
+                DeliveryAddress = o.DeliveryAddress,
+                CustomerName = o.CustomerName,
+                CustomerMobileNumber = o.CustomerMobileNumber,
+                Items = o.OrderItems.Select(oi => new OrderItemDto
+                {
+                    Id = oi.Id,
+                    ProductId = oi.ProductId,
+                    ProductName = oi.Product?.Name ?? string.Empty,
+                    Quantity = oi.Quantity,
+                    PriceAtTime = oi.PriceAtTime
+                }).ToList()
+            }).ToList();
+
+            return Ok(orderDtos);
+        }
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetOrder(int id)

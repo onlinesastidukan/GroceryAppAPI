@@ -46,6 +46,20 @@ namespace GroceryOrderingApp.Backend.Repositories
                 .ToListAsync();
         }
 
+
+        public async Task<List<Order>> GetActiveOrdersByMobileAsync(string mobileNumber)
+        {
+            var normalizedMobile = mobileNumber.Trim();
+
+            return await _context.Orders
+                .Where(o => (o.CustomerMobileNumber == normalizedMobile || (o.User != null && o.User.MobileNumber == normalizedMobile)) && o.Status != "Delivered")
+                .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .ThenInclude(p => p!.Category)
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+        }
         public async Task<Order> CreateOrderAsync(Order order)
         {
             await _context.Orders.AddAsync(order);
@@ -65,3 +79,4 @@ namespace GroceryOrderingApp.Backend.Repositories
         }
     }
 }
+
