@@ -4,7 +4,7 @@ using GroceryOrderingApp.Backend.Repositories;
 using GroceryOrderingApp.Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc; using Microsoft.Extensions.Logging;
 
 namespace GroceryOrderingApp.Backend.Controllers
 {
@@ -15,34 +15,29 @@ namespace GroceryOrderingApp.Backend.Controllers
         private readonly IOrderService _orderService;
         private readonly IDealerNotificationRepository _notificationRepository;
         private readonly IUserRepository _userRepository;
-        private readonly PasswordHasher<User> _passwordHasher;
+        private readonly PasswordHasher<User> _passwordHasher;         private readonly ILogger<OrdersController> _logger;
 
         public OrdersController(
             IOrderService orderService,
             IDealerNotificationRepository notificationRepository,
-            IUserRepository userRepository)
-        {
+            IUserRepository userRepository,             ILogger<OrdersController> logger)         {
             _orderService = orderService;
             _notificationRepository = notificationRepository;
             _userRepository = userRepository;
-            _passwordHasher = new PasswordHasher<User>();
+            _passwordHasher = new PasswordHasher<User>();             _logger = logger;
         }
 
         [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
         {
-            if (request.Items == null || request.Items.Count == 0)
-                return BadRequest("Order must contain at least one item");
+            if (request.Items == null || request.Items.Count == 0)             {                 _logger.LogWarning("CreateOrder rejected: empty items. Mobile={Mobile}, AddressProvided={HasAddress}", request.CustomerMobileNumber, !string.IsNullOrWhiteSpace(request.DeliveryAddress));                 return BadRequest("Order must contain at least one item");             }
 
             var userIdClaim = User.FindFirst("userId")?.Value;
             int userId;
             if (!int.TryParse(userIdClaim, out userId))
             {
-                if (string.IsNullOrWhiteSpace(request.CustomerMobileNumber) || string.IsNullOrWhiteSpace(request.DeliveryAddress))
-                {
-                    return BadRequest("CustomerMobileNumber and DeliveryAddress are required for guest orders");
-                }
+                if (string.IsNullOrWhiteSpace(request.CustomerMobileNumber) || string.IsNullOrWhiteSpace(request.DeliveryAddress))                 {                     _logger.LogWarning("CreateOrder guest validation failed. MobilePresent={HasMobile}, AddressPresent={HasAddress}", !string.IsNullOrWhiteSpace(request.CustomerMobileNumber), !string.IsNullOrWhiteSpace(request.DeliveryAddress));                     return BadRequest("CustomerMobileNumber and DeliveryAddress are required for guest orders");                 }
 
                 var customerUser = await GetOrCreateGuestCustomerAsync(request);
                 userId = customerUser.Id;
@@ -59,11 +54,11 @@ namespace GroceryOrderingApp.Backend.Controllers
                 };
                 var items = request.Items.Select(i => (i.ProductId, i.Quantity)).ToList();
 
-                var createdOrder = await _orderService.CreateOrderAsync(order, items);
+                _logger.LogInformation("CreateOrder request accepted. Mobile={Mobile}, ItemCount={ItemCount}, UserId={UserId}", request.CustomerMobileNumber, items.Count, userId);                 var createdOrder = await _orderService.CreateOrderAsync(order, items);
                 var fullOrder = await _orderService.GetOrderByIdAsync(createdOrder.Id);
                 if (fullOrder == null)
                 {
-                    return BadRequest("Order creation failed");
+                    _logger.LogError("CreateOrder failed after service call: fullOrder null. Mobile={Mobile}, UserId={UserId}", request.CustomerMobileNumber, userId);                     return BadRequest("Order creation failed");
                 }
 
                 await CreateDealerNotificationsAsync(fullOrder);
@@ -88,12 +83,9 @@ namespace GroceryOrderingApp.Backend.Controllers
                     }).ToList()
                 };
 
-                return Created($"/api/orders/{fullOrder.Id}", orderDto);
+                _logger.LogInformation("CreateOrder succeeded. OrderId={OrderId}, Mobile={Mobile}, Total={Total}", fullOrder.Id, request.CustomerMobileNumber, fullOrder.TotalAmount);                 return Created($"/api/orders/{fullOrder.Id}", orderDto);
             }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (InvalidOperationException ex)             {                 _logger.LogWarning(ex, "CreateOrder business validation failed. Mobile={Mobile}, ItemCount={ItemCount}", request.CustomerMobileNumber, request.Items?.Count ?? 0);                 return BadRequest(ex.Message);             }             catch (Exception ex)             {                 _logger.LogError(ex, "CreateOrder unexpected error. Mobile={Mobile}, ItemCount={ItemCount}", request.CustomerMobileNumber, request.Items?.Count ?? 0);                 return StatusCode(500, "Order creation failed due to an internal error");             }
         }
 
         [HttpGet("my")]
@@ -253,3 +245,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
     }
 }
+
+
+
+
