@@ -14,10 +14,12 @@ namespace GroceryOrderingApp.Backend.Services
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly PasswordHasher<User> _passwordHasher;
+        private readonly ICategoryRepository _categoryRepository;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(IUserRepository userRepository, IConfiguration configuration, ICategoryRepository categoryRepository)
         {
             _userRepository = userRepository;
+            _categoryRepository = categoryRepository;
             _configuration = configuration;
             _passwordHasher = new PasswordHasher<User>();
         }
@@ -140,3 +142,6 @@ namespace GroceryOrderingApp.Backend.Services
         }
     }
 }
+
+
+
