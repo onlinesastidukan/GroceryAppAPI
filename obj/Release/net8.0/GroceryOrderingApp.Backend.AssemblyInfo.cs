@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GroceryOrderingApp.Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7e75fc187cdceda37b4c985be034c499e5450712")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e2a4ff07aecac23543589336fb87c71f827f9bec")]
 [assembly: System.Reflection.AssemblyProductAttribute("GroceryOrderingApp.Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GroceryOrderingApp.Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

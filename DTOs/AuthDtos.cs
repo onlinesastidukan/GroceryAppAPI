@@ -14,7 +14,7 @@ namespace GroceryOrderingApp.Backend.DTOs
         public int UserId { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string MobileNumber { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;         public string? ShopImageUrl { get; set; }
     }
 
     public class RegisterRequestDto
@@ -22,7 +22,7 @@ namespace GroceryOrderingApp.Backend.DTOs
         public string Password { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string MobileNumber { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;         public string? ShopImageUrl { get; set; }
     }
 
     public class RegisterResponseDto
@@ -32,3 +32,5 @@ namespace GroceryOrderingApp.Backend.DTOs
         public int UserId { get; set; }
     }
 }
+
+
