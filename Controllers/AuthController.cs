@@ -54,21 +54,33 @@ namespace GroceryOrderingApp.Backend.Controllers
         [HttpPost("update-fcm-token")]
         public async Task<IActionResult> UpdateFcmToken([FromBody] UpdateFcmTokenRequestDto request)
         {
+            Console.WriteLine($"[FCM] Received FCM token update request");
+
             if (string.IsNullOrWhiteSpace(request.FcmToken))
             {
+                Console.WriteLine($"[FCM] Empty FCM token received");
                 return BadRequest("FCM token is required");
             }
+
+            Console.WriteLine($"[FCM] Token length: {request.FcmToken.Length}");
 
             var userIdClaim = User.FindFirst("userId")?.Value;
             if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
             {
+                Console.WriteLine($"[FCM] User not authenticated or invalid userId claim");
                 return Unauthorized("User not authenticated");
             }
 
+            Console.WriteLine($"[FCM] Processing FCM token update for user ID: {userId}");
+
             var result = await _authService.UpdateFcmTokenAsync(userId, request.FcmToken);
             if (!result)
+            {
+                Console.WriteLine($"[FCM] Failed to update FCM token for user ID: {userId}");
                 return BadRequest("Failed to update FCM token");
+            }
 
+            Console.WriteLine($"[FCM] FCM token update successful for user ID: {userId}");
             return Ok(new { Success = true, Message = "FCM token updated successfully" });
         }
     }

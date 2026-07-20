@@ -15,13 +15,19 @@ namespace GroceryOrderingApp.Backend.Services
         private readonly IConfiguration _configuration;
         private readonly PasswordHasher<User> _passwordHasher;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration, ICategoryRepository categoryRepository)
+        public AuthService(
+            IUserRepository userRepository, 
+            IConfiguration configuration, 
+            ICategoryRepository categoryRepository,
+            ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _categoryRepository = categoryRepository;
             _configuration = configuration;
             _passwordHasher = new PasswordHasher<User>();
+            _logger = logger;
         }
 
         public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
@@ -133,15 +139,24 @@ namespace GroceryOrderingApp.Backend.Services
             {
                 var user = await _userRepository.GetUserByIdAsync(userId);
                 if (user == null)
+                {
+                    Console.WriteLine($"[FCM] User not found with ID: {userId}");
                     return false;
+                }
+
+                Console.WriteLine($"[FCM] Updating FCM token for user: {user.FullName} (ID: {userId})");
+                Console.WriteLine($"[FCM] Token: {fcmToken?.Substring(0, Math.Min(20, fcmToken?.Length ?? 0))}...");
 
                 user.FcmToken = fcmToken;
                 user.UpdatedAt = DateTime.UtcNow;
                 await _userRepository.UpdateUserAsync(user);
+
+                Console.WriteLine($"[FCM] Successfully updated FCM token for user ID: {userId}");
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"[FCM] Error updating FCM token for user ID {userId}: {ex.Message}");
                 return false;
             }
         }
