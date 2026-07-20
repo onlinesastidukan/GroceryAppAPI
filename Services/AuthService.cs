@@ -106,6 +106,19 @@ namespace GroceryOrderingApp.Backend.Services
             user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
             var createdUser = await _userRepository.CreateUserAsync(user);
 
+            // Auto-create shop/category for the dealer
+            var newCategory = new Category
+            {
+                Name = request.FullName.Trim(),
+                Description = $"Shop for {request.FullName.Trim()}",
+                PhotoUrl = request.ShopImageUrl,
+                DealerId = createdUser.Id,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _categoryRepository.CreateCategoryAsync(newCategory);
+
             return new RegisterResponseDto
             {
                 Success = true,
