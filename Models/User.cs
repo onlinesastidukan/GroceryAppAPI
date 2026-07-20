@@ -13,6 +13,7 @@ namespace GroceryOrderingApp.Backend.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         public bool IsActive { get; set; } = true;
+        public string? FcmToken { get; set; }
 
         public Role? Role { get; set; }
         public ICollection<Order> Orders { get; set; } = new List<Order>();

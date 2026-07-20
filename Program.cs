@@ -171,3 +171,4 @@ static string BuildNpgsqlConnectionString(string input)
 
     return input;
 }
+

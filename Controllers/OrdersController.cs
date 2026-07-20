@@ -16,15 +16,19 @@ namespace GroceryOrderingApp.Backend.Controllers
         private readonly IDealerNotificationRepository _notificationRepository;
         private readonly IUserRepository _userRepository;
         private readonly PasswordHasher<User> _passwordHasher;         private readonly ILogger<OrdersController> _logger;
+        private readonly INotificationService _notificationService;
 
         public OrdersController(
             IOrderService orderService,
             IDealerNotificationRepository notificationRepository,
-            IUserRepository userRepository,             ILogger<OrdersController> logger)         {
+            IUserRepository userRepository,             ILogger<OrdersController> logger,
+            INotificationService notificationService)         {
             _orderService = orderService;
             _notificationRepository = notificationRepository;
             _userRepository = userRepository;
-            _passwordHasher = new PasswordHasher<User>();             _logger = logger;
+            _passwordHasher = new PasswordHasher<User>();
+            _logger = logger;
+            _notificationService = notificationService;
         }
 
         [HttpPost]
@@ -245,6 +249,10 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
     }
 }
+
+
+
+
 
 
 

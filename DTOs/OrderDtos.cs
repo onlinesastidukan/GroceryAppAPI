@@ -5,7 +5,17 @@ namespace GroceryOrderingApp.Backend.DTOs
     public class CreateOrderRequest
     {
         public string? CustomerName { get; set; }
+        
         public string? CustomerMobileNumber { get; set; }
+        
+        // Alias for mobile compatibility
+        [JsonPropertyName("mobileNumber")]
+        public string? MobileNumber
+        {
+            get => CustomerMobileNumber;
+            set => CustomerMobileNumber = value;
+        }
+        
         public string? DeliveryAddress { get; set; }
         public List<OrderItemRequest> Items { get; set; } = new();
     }
