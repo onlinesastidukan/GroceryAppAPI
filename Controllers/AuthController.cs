@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using GroceryOrderingApp.Backend.Services;
 using GroceryOrderingApp.Backend.DTOs;
 
@@ -47,6 +48,28 @@ namespace GroceryOrderingApp.Backend.Controllers
                 return BadRequest(result.Message);
 
             return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost("update-fcm-token")]
+        public async Task<IActionResult> UpdateFcmToken([FromBody] UpdateFcmTokenRequestDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.FcmToken))
+            {
+                return BadRequest("FCM token is required");
+            }
+
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized("User not authenticated");
+            }
+
+            var result = await _authService.UpdateFcmTokenAsync(userId, request.FcmToken);
+            if (!result)
+                return BadRequest("Failed to update FCM token");
+
+            return Ok(new { Success = true, Message = "FCM token updated successfully" });
         }
     }
 }

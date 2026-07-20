@@ -38,6 +38,7 @@ builder.Services.AddScoped<IDealerNotificationRepository, DealerNotificationRepo
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");

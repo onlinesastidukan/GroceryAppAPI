@@ -127,6 +127,25 @@ namespace GroceryOrderingApp.Backend.Services
             };
         }
 
+        public async Task<bool> UpdateFcmTokenAsync(int userId, string fcmToken)
+        {
+            try
+            {
+                var user = await _userRepository.GetUserByIdAsync(userId);
+                if (user == null)
+                    return false;
+
+                user.FcmToken = fcmToken;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _userRepository.UpdateUserAsync(user);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public string GenerateToken(User user)
         {
             var jwtSecret = _configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");

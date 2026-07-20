@@ -9,6 +9,7 @@ namespace GroceryOrderingApp.Backend.Services
     {
         Task<LoginResponseDto?> LoginAsync(LoginRequestDto request);
         Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request);
+        Task<bool> UpdateFcmTokenAsync(int userId, string fcmToken);
         string GenerateToken(User user);
     }
 }

@@ -31,6 +31,11 @@ namespace GroceryOrderingApp.Backend.DTOs
         public string Message { get; set; } = string.Empty;
         public int UserId { get; set; }
     }
+
+    public class UpdateFcmTokenRequestDto
+    {
+        public string FcmToken { get; set; } = string.Empty;
+    }
 }
 
 
