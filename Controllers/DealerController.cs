@@ -1,5 +1,6 @@
 using GroceryOrderingApp.Backend.DTOs;
 using GroceryOrderingApp.Backend.Repositories;
+using GroceryOrderingApp.Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,15 +14,18 @@ namespace GroceryOrderingApp.Backend.Controllers
         private readonly ICategoryRepository _categoryRepository;
         private readonly IProductRepository _productRepository;
         private readonly IDealerNotificationRepository _notificationRepository;
+        private readonly IOrderService _orderService;
 
         public DealerController(
             ICategoryRepository categoryRepository,
             IProductRepository productRepository,
-            IDealerNotificationRepository notificationRepository)
+            IDealerNotificationRepository notificationRepository,
+            IOrderService orderService)
         {
             _categoryRepository = categoryRepository;
             _productRepository = productRepository;
             _notificationRepository = notificationRepository;
+            _orderService = orderService;
         }
 
         [HttpGet("shops")]
@@ -327,6 +331,114 @@ namespace GroceryOrderingApp.Backend.Controllers
 
             await _notificationRepository.MarkAsReadAsync(dealerId, id);
             return Ok(new { message = "Notification marked as read" });
+        }
+
+        [HttpGet("dashboard")]
+        public async Task<IActionResult> GetDashboard()
+        {
+            if (!int.TryParse(User.FindFirst("userId")?.Value, out var dealerId))
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                // Get dealer's products to filter orders
+                var products = await _productRepository.GetProductsByDealerAsync(dealerId);
+                var dealerProductIds = products.Select(p => p.Id).ToHashSet();
+
+                if (dealerProductIds.Count == 0)
+                {
+                    return Ok(new
+                    {
+                        totalOrders = 0,
+                        pendingOrders = 0,
+                        totalRevenue = 0m,
+                        totalProducts = 0
+                    });
+                }
+
+                // Get all orders and filter by dealer's products
+                var allOrders = await _orderService.GetAllOrdersAsync();
+                var dealerOrders = allOrders
+                    .Where(o => o.OrderItems != null && o.OrderItems.Any(oi => dealerProductIds.Contains(oi.ProductId)))
+                    .ToList();
+
+                var totalOrders = dealerOrders.Count;
+                var pendingOrders = dealerOrders.Count(o => string.Equals(o.Status, "Pending", StringComparison.OrdinalIgnoreCase));
+                var totalRevenue = dealerOrders.Sum(o => o.TotalAmount);
+                var totalProducts = products.Count;
+
+                return Ok(new
+                {
+                    totalOrders,
+                    pendingOrders,
+                    totalRevenue,
+                    totalProducts
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error loading dashboard: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("orders")]
+        public async Task<IActionResult> GetDealerOrders()
+        {
+            if (!int.TryParse(User.FindFirst("userId")?.Value, out var dealerId))
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                // Get dealer's products to filter orders
+                var products = await _productRepository.GetProductsByDealerAsync(dealerId);
+                var dealerProductIds = products.Select(p => p.Id).ToHashSet();
+
+                if (dealerProductIds.Count == 0)
+                {
+                    return Ok(new List<OrderDto>());
+                }
+
+                // Get all orders and filter by dealer's products
+                var allOrders = await _orderService.GetAllOrdersAsync();
+                var dealerOrders = allOrders
+                    .Where(o => o.OrderItems != null && o.OrderItems.Any(oi => dealerProductIds.Contains(oi.ProductId)))
+                    .OrderByDescending(o => o.OrderDate)
+                    .ToList();
+
+                var orderDtos = dealerOrders.Select(o => new OrderDto
+                {
+                    Id = o.Id,
+                    UserId = o.UserId,
+                    UserFullName = o.User?.FullName ?? string.Empty,
+                    UserMobileNumber = o.User?.MobileNumber ?? string.Empty,
+                    OrderDate = o.OrderDate,
+                    Status = o.Status,
+                    TotalAmount = o.TotalAmount,
+                    DeliveryAddress = o.DeliveryAddress,
+                    CustomerName = o.CustomerName,
+                    CustomerMobileNumber = o.CustomerMobileNumber,
+                    Items = o.OrderItems
+                        .Where(oi => dealerProductIds.Contains(oi.ProductId))
+                        .Select(oi => new OrderItemDto
+                        {
+                            Id = oi.Id,
+                            ProductId = oi.ProductId,
+                            ProductName = oi.Product?.Name ?? string.Empty,
+                            Quantity = oi.Quantity,
+                            PriceAtTime = oi.PriceAtTime
+                        }).ToList()
+                }).ToList();
+
+                return Ok(orderDtos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error loading orders: {ex.Message}" });
+            }
         }
     }
 }
