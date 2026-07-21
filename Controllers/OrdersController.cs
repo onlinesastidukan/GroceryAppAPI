@@ -245,6 +245,26 @@ namespace GroceryOrderingApp.Backend.Controllers
                     IsRead = false,
                     CreatedAt = DateTime.UtcNow
                 });
+
+                // Send FCM push notification
+                try
+                {
+                    var customerName = string.IsNullOrWhiteSpace(fullOrder.CustomerName)
+                        ? "Customer"
+                        : fullOrder.CustomerName;
+
+                    await _notificationService.SendOrderNotificationAsync(
+                        dealerId,
+                        fullOrder.Id,
+                        customerName,
+                        fullOrder.TotalAmount);
+
+                    _logger.LogInformation("FCM push sent for OrderId={OrderId}, DealerId={DealerId}", fullOrder.Id, dealerId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send FCM push for OrderId={OrderId}, DealerId={DealerId}", fullOrder.Id, dealerId);
+                }
             }
         }
     }
