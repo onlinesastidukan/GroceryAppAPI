@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using GroceryOrderingApp.Backend.Repositories;
 
@@ -14,7 +15,7 @@ namespace GroceryOrderingApp.Backend.Services
     public interface INotificationService
     {
         Task<bool> SendOrderNotificationAsync(int dealerId, int orderId, string customerName, decimal totalAmount);
-        Task<bool> SendNotificationToTokenAsync(string fcmToken, string title, string body, Dictionary<string, string> data = null);
+        Task<bool> SendNotificationToTokenAsync(string fcmToken, string title, string body, Dictionary<string, string>? data = null);
     }
 
     public class NotificationService : INotificationService
@@ -39,39 +40,106 @@ namespace GroceryOrderingApp.Backend.Services
         {
             try
             {
-                if (FirebaseApp.DefaultInstance == null)
-                {
-                    var serviceAccountPath = _configuration["Firebase:ServiceAccountPath"];
-
-                    if (string.IsNullOrEmpty(serviceAccountPath))
-                    {
-                        _logger.LogWarning("Firebase ServiceAccountPath not configured in appsettings.json");
-                        return;
-                    }
-
-                    if (!File.Exists(serviceAccountPath))
-                    {
-                        _logger.LogWarning($"Firebase service account file not found at: {serviceAccountPath}");
-                        return;
-                    }
-
-                    FirebaseApp.Create(new AppOptions()
-                    {
-                        Credential = GoogleCredential.FromFile(serviceAccountPath)
-                    });
-
-                    _firebaseInitialized = true;
-                    _logger.LogInformation("Firebase Admin SDK initialized successfully");
-                }
-                else
+                if (FirebaseApp.DefaultInstance != null)
                 {
                     _firebaseInitialized = true;
+                    return;
                 }
+
+                GoogleCredential? credential = TryGetCredentialFromGoogleApplicationCredentials();
+                if (credential == null)
+                {
+                    credential = TryGetCredentialFromServiceAccountJson();
+                }
+
+                if (credential == null)
+                {
+                    credential = TryGetCredentialFromConfiguredFilePath();
+                }
+
+                if (credential == null)
+                {
+                    _logger.LogWarning("Firebase credentials were not found. Configure GOOGLE_APPLICATION_CREDENTIALS (file path) or FIREBASE_SERVICE_ACCOUNT_JSON.");
+                    return;
+                }
+
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = credential
+                });
+
+                _firebaseInitialized = true;
+                _logger.LogInformation("Firebase Admin SDK initialized successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to initialize Firebase Admin SDK");
             }
+        }
+
+        private GoogleCredential? TryGetCredentialFromGoogleApplicationCredentials()
+        {
+            var path = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return null;
+            }
+
+            if (!File.Exists(path))
+            {
+                _logger.LogWarning("GOOGLE_APPLICATION_CREDENTIALS is set but file does not exist at: {Path}", path);
+                return null;
+            }
+
+            _logger.LogInformation("Using Firebase credentials from GOOGLE_APPLICATION_CREDENTIALS.");
+            return GoogleCredential.FromFile(path);
+        }
+
+        private GoogleCredential? TryGetCredentialFromServiceAccountJson()
+        {
+            var serviceAccountJson =
+                Environment.GetEnvironmentVariable("FIREBASE_SERVICE_ACCOUNT_JSON")
+                ?? _configuration["Firebase:ServiceAccountJson"];
+
+            if (string.IsNullOrWhiteSpace(serviceAccountJson))
+            {
+                return null;
+            }
+
+            _logger.LogInformation("Using Firebase credentials from FIREBASE_SERVICE_ACCOUNT_JSON.");
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(serviceAccountJson));
+            return GoogleCredential.FromStream(stream);
+        }
+
+        private GoogleCredential? TryGetCredentialFromConfiguredFilePath()
+        {
+            var configuredPath = _configuration["Firebase:ServiceAccountPath"];
+            if (string.IsNullOrWhiteSpace(configuredPath))
+            {
+                _logger.LogWarning("Firebase:ServiceAccountPath is not configured.");
+                return null;
+            }
+
+            var candidatePaths = new[]
+            {
+                configuredPath,
+                Path.Combine(AppContext.BaseDirectory, configuredPath),
+                Path.Combine(Directory.GetCurrentDirectory(), configuredPath)
+            };
+
+            foreach (var path in candidatePaths)
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                _logger.LogInformation("Using Firebase credentials from file path: {Path}", path);
+                return GoogleCredential.FromFile(path);
+            }
+
+            _logger.LogWarning("Firebase service account file not found. Checked paths: {Paths}", string.Join(", ", candidatePaths));
+            return null;
         }
 
         public async Task<bool> SendOrderNotificationAsync(int dealerId, int orderId, string customerName, decimal totalAmount)
@@ -111,11 +179,17 @@ namespace GroceryOrderingApp.Backend.Services
             }
         }
 
-        public async Task<bool> SendNotificationToTokenAsync(string fcmToken, string title, string body, Dictionary<string, string> data = null)
+        public async Task<bool> SendNotificationToTokenAsync(string fcmToken, string title, string body, Dictionary<string, string>? data = null)
         {
             if (!_firebaseInitialized)
             {
                 _logger.LogWarning("Firebase not initialized, skipping notification");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(fcmToken))
+            {
+                _logger.LogWarning("FCM token is empty, skipping notification");
                 return false;
             }
 
