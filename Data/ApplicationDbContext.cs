@@ -40,6 +40,8 @@ namespace GroceryOrderingApp.Backend.Data
                 entity.Property(e => e.Address).IsRequired().HasMaxLength(300);
                 entity.Property(e => e.PasswordHash).IsRequired();
                 entity.HasIndex(e => e.UserId).IsUnique();
+                entity.HasIndex(e => e.MobileNumber);
+                entity.HasIndex(e => e.RoleId);
                 entity.HasOne(e => e.Role).WithMany(r => r.Users).HasForeignKey(e => e.RoleId);
             });
 
@@ -50,6 +52,10 @@ namespace GroceryOrderingApp.Backend.Data
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasColumnType("text");
                 entity.Property(e => e.PhotoUrl).HasColumnType("text");
+                entity.HasIndex(e => e.DealerId);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => new { e.DealerId, e.IsActive });
+                entity.HasIndex(e => e.UpdatedAt);
                 entity.HasOne(e => e.Dealer)
                     .WithMany(u => u.DealerShops)
                     .HasForeignKey(e => e.DealerId)
@@ -62,6 +68,10 @@ namespace GroceryOrderingApp.Backend.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Price).HasPrecision(18, 2);
+                entity.HasIndex(e => e.CategoryId);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => new { e.CategoryId, e.IsActive });
+                entity.HasIndex(e => e.UpdatedAt);
                 entity.HasOne(e => e.Category).WithMany(c => c.Products).HasForeignKey(e => e.CategoryId);
             });
 
@@ -74,6 +84,11 @@ namespace GroceryOrderingApp.Backend.Data
                 entity.Property(e => e.DeliveryAddress).HasMaxLength(500);
                 entity.Property(e => e.CustomerName).HasMaxLength(150);
                 entity.Property(e => e.CustomerMobileNumber).HasMaxLength(20);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.OrderDate);
+                entity.HasIndex(e => e.CustomerMobileNumber);
+                entity.HasIndex(e => new { e.Status, e.OrderDate });
                 entity.HasOne(e => e.User).WithMany(u => u.Orders).HasForeignKey(e => e.UserId);
             });
 
@@ -82,6 +97,9 @@ namespace GroceryOrderingApp.Backend.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.PriceAtTime).HasPrecision(18, 2);
+                entity.HasIndex(e => e.OrderId);
+                entity.HasIndex(e => e.ProductId);
+                entity.HasIndex(e => new { e.OrderId, e.ProductId });
                 entity.HasOne(e => e.Order).WithMany(o => o.OrderItems).HasForeignKey(e => e.OrderId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne(e => e.Product).WithMany(p => p.OrderItems).HasForeignKey(e => e.ProductId);
             });
@@ -90,6 +108,9 @@ namespace GroceryOrderingApp.Backend.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Message).IsRequired().HasMaxLength(500);
+                entity.HasIndex(e => e.DealerId);
+                entity.HasIndex(e => e.OrderId);
+                entity.HasIndex(e => new { e.DealerId, e.IsRead, e.CreatedAt });
                 entity.HasOne(e => e.Dealer)
                     .WithMany(u => u.DealerNotifications)
                     .HasForeignKey(e => e.DealerId)

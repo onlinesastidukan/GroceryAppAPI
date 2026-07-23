@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GroceryOrderingApp.Backend.Repositories;
 using GroceryOrderingApp.Backend.DTOs;
+using GroceryOrderingApp.Backend.Helpers;
 
 namespace GroceryOrderingApp.Backend.Controllers
 {
@@ -42,7 +43,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 StockQuantity = p.StockQuantity,
                 CategoryId = p.CategoryId,
                 ShopId = p.CategoryId,
-                PhotoUrl = p.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(p.PhotoUrl),
                 IsActive = p.IsActive
             }).ToList();
 

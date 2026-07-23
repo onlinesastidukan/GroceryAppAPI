@@ -16,21 +16,21 @@ namespace GroceryOrderingApp.Backend.Repositories
         public async Task<Order?> GetOrderByIdAsync(int id)
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
-                .ThenInclude(p => p!.Category)
                 .FirstOrDefaultAsync(o => o.Id == id);
         }
 
         public async Task<List<Order>> GetOrdersByUserAsync(int userId)
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Where(o => o.UserId == userId)
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
-                .ThenInclude(p => p!.Category)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
@@ -38,10 +38,10 @@ namespace GroceryOrderingApp.Backend.Repositories
         public async Task<List<Order>> GetAllOrdersAsync()
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
-                .ThenInclude(p => p!.Category)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
@@ -52,11 +52,11 @@ namespace GroceryOrderingApp.Backend.Repositories
             var normalizedMobile = mobileNumber.Trim();
 
             return await _context.Orders
+                .AsNoTracking()
                 .Where(o => (o.CustomerMobileNumber == normalizedMobile || (o.User != null && o.User.MobileNumber == normalizedMobile)) && o.Status != "Delivered")
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
-                .ThenInclude(p => p!.Category)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }

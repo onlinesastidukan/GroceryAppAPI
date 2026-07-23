@@ -15,28 +15,32 @@ namespace GroceryOrderingApp.Backend.Repositories
 
         public async Task<Product?> GetProductByIdAsync(int id)
         {
-            return await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
+            return await _context.Products
+                .AsNoTracking()
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<List<Product>> GetProductsByCategoryAsync(int categoryId)
         {
             return await _context.Products
+                .AsNoTracking()
                 .Where(p => p.CategoryId == categoryId)
-                .Include(p => p.Category)
                 .ToListAsync();
         }
 
         public async Task<List<Product>> GetActiveProductsByCategoryAsync(int categoryId)
         {
             return await _context.Products
+                .AsNoTracking()
                 .Where(p => p.CategoryId == categoryId && p.IsActive)
-                .Include(p => p.Category)
                 .ToListAsync();
         }
 
         public async Task<List<Product>> GetProductsByDealerAsync(int dealerId)
         {
             return await _context.Products
+                .AsNoTracking()
                 .Where(p => p.IsActive && p.Category != null && p.Category.DealerId == dealerId)
                 .Include(p => p.Category)
                 .ToListAsync();
@@ -44,7 +48,10 @@ namespace GroceryOrderingApp.Backend.Repositories
 
         public async Task<List<Product>> GetAllProductsAsync()
         {
-            return await _context.Products.Include(p => p.Category).ToListAsync();
+            return await _context.Products
+                .AsNoTracking()
+                .Where(p => p.IsActive)
+                .ToListAsync();
         }
 
         public async Task<Product> CreateProductAsync(Product product)

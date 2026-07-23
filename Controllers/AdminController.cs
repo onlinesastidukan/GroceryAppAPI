@@ -4,6 +4,7 @@ using GroceryOrderingApp.Backend.Repositories;
 using GroceryOrderingApp.Backend.Models;
 using GroceryOrderingApp.Backend.DTOs;
 using GroceryOrderingApp.Backend.Services;
+using GroceryOrderingApp.Backend.Helpers;
 using Microsoft.AspNetCore.Identity;
 
 namespace GroceryOrderingApp.Backend.Controllers
@@ -132,7 +133,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                PhotoUrl = c.PhotoUrl,
+                PhotoUrl = null, // Admin list intentionally excludes heavy image payloads.
                 DealerId = c.DealerId,
                 IsActive = c.IsActive,
                 CreatedAt = c.CreatedAt,
@@ -152,12 +153,13 @@ namespace GroceryOrderingApp.Backend.Controllers
             var photoUrl = !string.IsNullOrWhiteSpace(request.PhotoUrl)
                 ? request.PhotoUrl.Trim()
                 : (!string.IsNullOrWhiteSpace(request.ImageUrl) ? request.ImageUrl.Trim() : null);
+            var optimizedPhotoUrl = ImagePayloadOptimizer.CompressForStorage(photoUrl);
 
             var category = new Category
             {
                 Name = request.Name,
                 Description = request.Description,
-                PhotoUrl = photoUrl,
+                PhotoUrl = optimizedPhotoUrl,
                 DealerId = request.DealerId,
                 IsActive = true
             };
@@ -168,7 +170,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Id = createdCategory.Id,
                 Name = createdCategory.Name,
                 Description = createdCategory.Description,
-                PhotoUrl = createdCategory.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(createdCategory.PhotoUrl),
                 DealerId = createdCategory.DealerId,
                 IsActive = createdCategory.IsActive
             };
@@ -204,7 +206,7 @@ namespace GroceryOrderingApp.Backend.Controllers
             category.Name = request.Name;
             category.Description = request.Description;
             // Only overwrite PhotoUrl if caller supplied one; preserve existing otherwise
-            if (photoUrl != null) category.PhotoUrl = photoUrl;
+            if (photoUrl != null) category.PhotoUrl = ImagePayloadOptimizer.CompressForStorage(photoUrl);
             category.DealerId = request.DealerId;
             category.IsActive = request.IsActive;
             category.UpdatedAt = DateTime.UtcNow;
@@ -216,7 +218,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Id = category.Id,
                 Name = category.Name,
                 Description = category.Description,
-                PhotoUrl = category.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(category.PhotoUrl),
                 DealerId = category.DealerId,
                 IsActive = category.IsActive,
                 UpdatedAt = category.UpdatedAt
@@ -231,6 +233,39 @@ namespace GroceryOrderingApp.Backend.Controllers
             => await UpdateCategory(id, request);
 
         // Products Management
+        [HttpGet("products")]
+        public async Task<IActionResult> GetAllProducts([FromQuery] int? categoryId = null, [FromQuery] int? shopId = null)
+        {
+            List<Product> products;
+            var effectiveCategoryId = shopId.GetValueOrDefault() > 0 ? shopId : categoryId;
+
+            if (effectiveCategoryId.HasValue && effectiveCategoryId.Value > 0)
+            {
+                products = await _productRepository.GetProductsByCategoryAsync(effectiveCategoryId.Value);
+            }
+            else
+            {
+                products = await _productRepository.GetAllProductsAsync();
+            }
+
+            var productDtos = products.Select(p => new ProductDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                StockQuantity = p.StockQuantity,
+                CategoryId = p.CategoryId,
+                ShopId = p.CategoryId,
+                PhotoUrl = null, // Admin list intentionally excludes heavy image payloads.
+                IsActive = p.IsActive,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt
+            }).ToList();
+
+            return Ok(productDtos);
+        }
+
         [HttpPost("products")]
         public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
         {
@@ -249,7 +284,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Price = request.Price,
                 StockQuantity = request.StockQuantity,
                 CategoryId = categoryId,
-                PhotoUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim(),
+                PhotoUrl = ImagePayloadOptimizer.CompressForStorage(string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim()),
                 IsActive = true
             };
 
@@ -264,7 +299,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 StockQuantity = createdProduct.StockQuantity,
                 CategoryId = createdProduct.CategoryId,
                 ShopId = createdProduct.CategoryId,
-                PhotoUrl = createdProduct.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(createdProduct.PhotoUrl),
                 IsActive = createdProduct.IsActive
             };
 
@@ -286,7 +321,7 @@ namespace GroceryOrderingApp.Backend.Controllers
             product.Price = request.Price;
             product.StockQuantity = request.StockQuantity;
             product.CategoryId = request.ShopId > 0 ? request.ShopId : request.CategoryId;
-            product.PhotoUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim();
+            product.PhotoUrl = ImagePayloadOptimizer.CompressForStorage(string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim());
             product.IsActive = request.IsActive;
 
             await _productRepository.UpdateProductAsync(product);
@@ -300,7 +335,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 StockQuantity = product.StockQuantity,
                 CategoryId = product.CategoryId,
                 ShopId = product.CategoryId,
-                PhotoUrl = product.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(product.PhotoUrl),
                 IsActive = product.IsActive
             };
 
@@ -419,5 +454,6 @@ namespace GroceryOrderingApp.Backend.Controllers
 
             return Ok(new { message = "Order cancelled successfully" });
         }
+
     }
 }

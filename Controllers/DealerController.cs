@@ -1,6 +1,7 @@
 using GroceryOrderingApp.Backend.DTOs;
 using GroceryOrderingApp.Backend.Repositories;
 using GroceryOrderingApp.Backend.Services;
+using GroceryOrderingApp.Backend.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,7 +43,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Id = s.Id,
                 Name = s.Name,
                 Description = s.Description,
-                PhotoUrl = s.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(s.PhotoUrl),
                 DealerId = s.DealerId,
                 IsActive = s.IsActive,
                 CreatedAt = s.CreatedAt,
@@ -73,7 +74,7 @@ namespace GroceryOrderingApp.Backend.Controllers
             {
                 Name = request.Name.Trim(),
                 Description = request.Description?.Trim(),
-                PhotoUrl = photoUrl,
+                PhotoUrl = ImagePayloadOptimizer.CompressForStorage(photoUrl),
                 DealerId = dealerId,
                 IsActive = true
             };
@@ -84,7 +85,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Id = created.Id,
                 Name = created.Name,
                 Description = created.Description,
-                PhotoUrl = created.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(created.PhotoUrl),
                 DealerId = created.DealerId,
                 IsActive = created.IsActive,
                 CreatedAt = created.CreatedAt,
@@ -114,7 +115,7 @@ namespace GroceryOrderingApp.Backend.Controllers
             shop.Description = request.Description?.Trim();
             if (photoUrl != null)
             {
-                shop.PhotoUrl = photoUrl;
+                shop.PhotoUrl = ImagePayloadOptimizer.CompressForStorage(photoUrl);
             }
 
             shop.IsActive = request.IsActive;
@@ -126,7 +127,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Id = shop.Id,
                 Name = shop.Name,
                 Description = shop.Description,
-                PhotoUrl = shop.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(shop.PhotoUrl),
                 DealerId = shop.DealerId,
                 IsActive = shop.IsActive,
                 CreatedAt = shop.CreatedAt,
@@ -170,7 +171,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 StockQuantity = p.StockQuantity,
                 CategoryId = p.CategoryId,
                 ShopId = p.CategoryId,
-                PhotoUrl = p.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(p.PhotoUrl),
                 IsActive = p.IsActive,
                 CreatedAt = p.CreatedAt,
                 UpdatedAt = p.UpdatedAt
@@ -206,7 +207,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Price = request.Price,
                 StockQuantity = request.StockQuantity,
                 CategoryId = shopId,
-                PhotoUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim(),
+                PhotoUrl = ImagePayloadOptimizer.CompressForStorage(string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim()),
                 IsActive = true
             };
 
@@ -220,7 +221,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 StockQuantity = createdProduct.StockQuantity,
                 CategoryId = createdProduct.CategoryId,
                 ShopId = createdProduct.CategoryId,
-                PhotoUrl = createdProduct.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(createdProduct.PhotoUrl),
                 IsActive = createdProduct.IsActive,
                 CreatedAt = createdProduct.CreatedAt,
                 UpdatedAt = createdProduct.UpdatedAt
@@ -255,7 +256,7 @@ namespace GroceryOrderingApp.Backend.Controllers
             product.Description = request.Description;
             product.Price = request.Price;
             product.StockQuantity = request.StockQuantity;
-            product.PhotoUrl = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim();
+            product.PhotoUrl = ImagePayloadOptimizer.CompressForStorage(string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim());
             product.IsActive = request.IsActive;
             product.UpdatedAt = DateTime.UtcNow;
 
@@ -270,7 +271,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 StockQuantity = product.StockQuantity,
                 CategoryId = product.CategoryId,
                 ShopId = product.CategoryId,
-                PhotoUrl = product.PhotoUrl,
+                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(product.PhotoUrl),
                 IsActive = product.IsActive,
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt
