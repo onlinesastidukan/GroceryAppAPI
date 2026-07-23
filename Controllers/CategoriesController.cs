@@ -19,7 +19,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetActiveCategories()
+        public async Task<IActionResult> GetActiveCategories([FromQuery] bool includeImage = false)
         {
             var categories = await _categoryRepository.GetActiveCategoriesAsync();
             var categoryDtos = categories.Select(c => new CategoryDto
@@ -27,7 +27,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(c.PhotoUrl),
+                PhotoUrl = includeImage ? ImagePayloadOptimizer.ExpandForResponse(c.PhotoUrl) : null,
                 DealerId = c.DealerId,
                 IsActive = c.IsActive,
                 CreatedAt = c.CreatedAt,

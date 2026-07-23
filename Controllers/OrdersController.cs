@@ -94,7 +94,7 @@ namespace GroceryOrderingApp.Backend.Controllers
 
         [HttpGet("my")]
         [Authorize]
-        public async Task<IActionResult> GetMyOrders()
+        public async Task<IActionResult> GetMyOrders([FromQuery] bool includeItems = false)
         {
             var userIdClaim = User.FindFirst("userId")?.Value;
             if (!int.TryParse(userIdClaim, out var userId))
@@ -111,14 +111,16 @@ namespace GroceryOrderingApp.Backend.Controllers
                 DeliveryAddress = o.DeliveryAddress,
                 CustomerName = o.CustomerName,
                 CustomerMobileNumber = o.CustomerMobileNumber,
-                Items = o.OrderItems.Select(oi => new OrderItemDto
-                {
-                    Id = oi.Id,
-                    ProductId = oi.ProductId,
-                    ProductName = oi.Product?.Name ?? "",
-                    Quantity = oi.Quantity,
-                    PriceAtTime = oi.PriceAtTime
-                }).ToList()
+                Items = includeItems
+                    ? o.OrderItems.Select(oi => new OrderItemDto
+                    {
+                        Id = oi.Id,
+                        ProductId = oi.ProductId,
+                        ProductName = oi.Product?.Name ?? "",
+                        Quantity = oi.Quantity,
+                        PriceAtTime = oi.PriceAtTime
+                    }).ToList()
+                    : new List<OrderItemDto>()
             }).ToList();
 
             return Ok(orderDtos);
@@ -127,7 +129,7 @@ namespace GroceryOrderingApp.Backend.Controllers
 
         [HttpGet("mobile/{mobileNumber}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetActiveOrdersByMobile(string mobileNumber)
+        public async Task<IActionResult> GetActiveOrdersByMobile(string mobileNumber, [FromQuery] bool includeItems = false)
         {
             if (string.IsNullOrWhiteSpace(mobileNumber))
             {
@@ -147,14 +149,16 @@ namespace GroceryOrderingApp.Backend.Controllers
                 DeliveryAddress = o.DeliveryAddress,
                 CustomerName = o.CustomerName,
                 CustomerMobileNumber = o.CustomerMobileNumber,
-                Items = o.OrderItems.Select(oi => new OrderItemDto
-                {
-                    Id = oi.Id,
-                    ProductId = oi.ProductId,
-                    ProductName = oi.Product?.Name ?? string.Empty,
-                    Quantity = oi.Quantity,
-                    PriceAtTime = oi.PriceAtTime
-                }).ToList()
+                Items = includeItems
+                    ? o.OrderItems.Select(oi => new OrderItemDto
+                    {
+                        Id = oi.Id,
+                        ProductId = oi.ProductId,
+                        ProductName = oi.Product?.Name ?? string.Empty,
+                        Quantity = oi.Quantity,
+                        PriceAtTime = oi.PriceAtTime
+                    }).ToList()
+                    : new List<OrderItemDto>()
             }).ToList();
 
             return Ok(orderDtos);

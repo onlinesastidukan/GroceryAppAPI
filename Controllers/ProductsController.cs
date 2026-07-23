@@ -17,7 +17,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProductsByCategory([FromQuery] int? categoryId = null, [FromQuery] int? shopId = null)
+        public async Task<IActionResult> GetProductsByCategory([FromQuery] int? categoryId = null, [FromQuery] int? shopId = null, [FromQuery] bool includeImage = false)
         {
             List<Models.Product> products;
             var effectiveCategoryId = shopId.GetValueOrDefault() > 0 ? shopId : categoryId;
@@ -43,7 +43,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 StockQuantity = p.StockQuantity,
                 CategoryId = p.CategoryId,
                 ShopId = p.CategoryId,
-                PhotoUrl = ImagePayloadOptimizer.ExpandForResponse(p.PhotoUrl),
+                PhotoUrl = includeImage ? ImagePayloadOptimizer.ExpandForResponse(p.PhotoUrl) : null,
                 IsActive = p.IsActive
             }).ToList();
 

@@ -385,7 +385,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpGet("orders")]
-        public async Task<IActionResult> GetDealerOrders()
+        public async Task<IActionResult> GetDealerOrders([FromQuery] bool includeItems = false)
         {
             if (!int.TryParse(User.FindFirst("userId")?.Value, out var dealerId))
             {
@@ -422,16 +422,18 @@ namespace GroceryOrderingApp.Backend.Controllers
                     DeliveryAddress = o.DeliveryAddress,
                     CustomerName = o.CustomerName,
                     CustomerMobileNumber = o.CustomerMobileNumber,
-                    Items = o.OrderItems
-                        .Where(oi => dealerProductIds.Contains(oi.ProductId))
-                        .Select(oi => new OrderItemDto
-                        {
-                            Id = oi.Id,
-                            ProductId = oi.ProductId,
-                            ProductName = oi.Product?.Name ?? string.Empty,
-                            Quantity = oi.Quantity,
-                            PriceAtTime = oi.PriceAtTime
-                        }).ToList()
+                    Items = includeItems
+                        ? o.OrderItems
+                            .Where(oi => dealerProductIds.Contains(oi.ProductId))
+                            .Select(oi => new OrderItemDto
+                            {
+                                Id = oi.Id,
+                                ProductId = oi.ProductId,
+                                ProductName = oi.Product?.Name ?? string.Empty,
+                                Quantity = oi.Quantity,
+                                PriceAtTime = oi.PriceAtTime
+                            }).ToList()
+                        : new List<OrderItemDto>()
                 }).ToList();
 
                 return Ok(orderDtos);

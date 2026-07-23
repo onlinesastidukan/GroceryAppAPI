@@ -360,7 +360,7 @@ namespace GroceryOrderingApp.Backend.Controllers
 
         // Orders Management
         [HttpGet("orders")]
-        public async Task<IActionResult> GetAllOrders()
+        public async Task<IActionResult> GetAllOrders([FromQuery] bool includeItems = false)
         {
             var orders = await _orderService.GetAllOrdersAsync();
             var orderDtos = orders.Select(o => new OrderDto
@@ -376,14 +376,16 @@ namespace GroceryOrderingApp.Backend.Controllers
                 DeliveryAddress = o.DeliveryAddress,
                 CustomerName = o.CustomerName,
                 CustomerMobileNumber = o.CustomerMobileNumber,
-                Items = o.OrderItems.Select(oi => new OrderItemDto
-                {
-                    Id = oi.Id,
-                    ProductId = oi.ProductId,
-                    ProductName = oi.Product?.Name ?? "",
-                    Quantity = oi.Quantity,
-                    PriceAtTime = oi.PriceAtTime
-                }).ToList()
+                Items = includeItems
+                    ? o.OrderItems.Select(oi => new OrderItemDto
+                    {
+                        Id = oi.Id,
+                        ProductId = oi.ProductId,
+                        ProductName = oi.Product?.Name ?? "",
+                        Quantity = oi.Quantity,
+                        PriceAtTime = oi.PriceAtTime
+                    }).ToList()
+                    : new List<OrderItemDto>()
             }).ToList();
 
             return Ok(orderDtos);
