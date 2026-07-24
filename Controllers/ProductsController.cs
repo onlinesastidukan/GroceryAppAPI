@@ -17,7 +17,7 @@ namespace GroceryOrderingApp.Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProductsByCategory([FromQuery] int? categoryId = null, [FromQuery] int? shopId = null, [FromQuery] bool includeImage = false)
+        public async Task<IActionResult> GetProductsByCategory([FromQuery] int? categoryId = null, [FromQuery] int? shopId = null, [FromQuery] bool includeImage = true)
         {
             List<Models.Product> products;
             var effectiveCategoryId = shopId.GetValueOrDefault() > 0 ? shopId : categoryId;

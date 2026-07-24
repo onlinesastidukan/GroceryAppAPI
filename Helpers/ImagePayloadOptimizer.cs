@@ -5,6 +5,7 @@ namespace GroceryOrderingApp.Backend.Helpers
 {
     public static class ImagePayloadOptimizer
     {
+        public const int MaxUploadBytes = 50 * 1024;
         private const string CompressedPrefix = "gzdata:";
         private const int MinCompressLength = 100_000;
 
@@ -36,6 +37,36 @@ namespace GroceryOrderingApp.Backend.Helpers
             catch
             {
                 return value;
+            }
+        }
+
+        public static bool IsWithinUploadLimit(string? imagePayload)
+        {
+            if (string.IsNullOrWhiteSpace(imagePayload))
+            {
+                return true;
+            }
+
+            var value = ExpandForResponse(imagePayload)?.Trim();
+            if (string.IsNullOrWhiteSpace(value) || !value.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var commaIndex = value.IndexOf(',');
+            if (commaIndex < 0 || commaIndex >= value.Length - 1)
+            {
+                return true;
+            }
+
+            try
+            {
+                var bytes = Convert.FromBase64String(value[(commaIndex + 1)..]);
+                return bytes.Length <= MaxUploadBytes;
+            }
+            catch
+            {
+                return false;
             }
         }
 

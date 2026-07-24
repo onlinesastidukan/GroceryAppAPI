@@ -70,6 +70,11 @@ namespace GroceryOrderingApp.Backend.Controllers
                 ? request.PhotoUrl.Trim()
                 : (!string.IsNullOrWhiteSpace(request.ImageUrl) ? request.ImageUrl.Trim() : null);
 
+            if (!ImagePayloadOptimizer.IsWithinUploadLimit(photoUrl))
+            {
+                return BadRequest("Shop image must be 50 KB or smaller.");
+            }
+
             var shop = new Models.Category
             {
                 Name = request.Name.Trim(),
@@ -115,6 +120,11 @@ namespace GroceryOrderingApp.Backend.Controllers
             shop.Description = request.Description?.Trim();
             if (photoUrl != null)
             {
+                if (!ImagePayloadOptimizer.IsWithinUploadLimit(photoUrl))
+                {
+                    return BadRequest("Shop image must be 50 KB or smaller.");
+                }
+
                 shop.PhotoUrl = ImagePayloadOptimizer.CompressForStorage(photoUrl);
             }
 
@@ -200,6 +210,12 @@ namespace GroceryOrderingApp.Backend.Controllers
                 return BadRequest("Shop not found for this dealer");
             }
 
+            var normalizedProductPhoto = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim();
+            if (!ImagePayloadOptimizer.IsWithinUploadLimit(normalizedProductPhoto))
+            {
+                return BadRequest("Product image must be 50 KB or smaller.");
+            }
+
             var product = new Models.Product
             {
                 Name = request.Name,
@@ -207,7 +223,7 @@ namespace GroceryOrderingApp.Backend.Controllers
                 Price = request.Price,
                 StockQuantity = request.StockQuantity,
                 CategoryId = shopId,
-                PhotoUrl = ImagePayloadOptimizer.CompressForStorage(string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim()),
+                PhotoUrl = ImagePayloadOptimizer.CompressForStorage(normalizedProductPhoto),
                 IsActive = true
             };
 
@@ -252,11 +268,17 @@ namespace GroceryOrderingApp.Backend.Controllers
                 return BadRequest("Invalid product data");
             }
 
+            var normalizedUpdatedProductPhoto = string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim();
+            if (!ImagePayloadOptimizer.IsWithinUploadLimit(normalizedUpdatedProductPhoto))
+            {
+                return BadRequest("Product image must be 50 KB or smaller.");
+            }
+
             product.Name = request.Name;
             product.Description = request.Description;
             product.Price = request.Price;
             product.StockQuantity = request.StockQuantity;
-            product.PhotoUrl = ImagePayloadOptimizer.CompressForStorage(string.IsNullOrWhiteSpace(request.PhotoUrl) ? null : request.PhotoUrl.Trim());
+            product.PhotoUrl = ImagePayloadOptimizer.CompressForStorage(normalizedUpdatedProductPhoto);
             product.IsActive = request.IsActive;
             product.UpdatedAt = DateTime.UtcNow;
 
